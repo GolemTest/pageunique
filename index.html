@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pathways</title>
+
+  <!-- Feuilles de style Leaflet -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+    crossorigin=""
+  />
+
+  <style>
+    /* ---------- Styles généraux ---------- */
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: #f9dbe3; /* fond rose pâle */
+      font-family: "Poppins", Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    /* ---------- En-tête ---------- */
+    header {
+      background-color: #f9dbe3; /* même rose que le fond */
+      padding: 16px 0;
+      text-align: center;
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    header img {
+      height: 70px;
+      width: auto;
+      max-width: 80%;
+    }
+
+    /* ---------- Carte ---------- */
+    #map {
+      flex-grow: 1;
+      width: 100%;
+      height: 100%;
+    }
+
+    /* ---------- Popup ---------- */
+    .leaflet-popup-content {
+      font-size: 14px;
+      color: #333;
+    }
+
+    .leaflet-popup-content strong {
+      color: #d81b60;
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    .leaflet-popup-content a {
+      color: #e91e63;
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    .leaflet-popup-content a:hover {
+      text-decoration: underline;
+    }
+
+    /* ---------- Responsive ---------- */
+    @media (max-width: 768px) {
+      header img {
+        height: 60px;
+      }
+      .leaflet-popup-content {
+        font-size: 13px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      header img {
+        height: 50px;
+      }
+      .leaflet-popup-content {
+        font-size: 12px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <!-- ---------- En-tête ---------- -->
+  <header>
+    <img src="logo.png" alt="Logo du site" />
+  </header>
+
+  <!-- ---------- Carte ---------- -->
+  <div id="map"></div>
+
+  <!-- ---------- Scripts Leaflet ---------- -->
+  <script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+    crossorigin=""
+  ></script>
+
+  <script>
+    // Vérifie si l'appareil est tactile
+    const isTouchDevice = "ontouchstart" in window || navigator.maxTouchPoints > 0;
+
+    // Initialisation de la carte
+    const map = L.map("map").setView([46.8, 2.5], 6); // Centre France
+
+    // Couche de fond (OpenStreetMap)
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 19,
+      attribution: '&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a>',
+    }).addTo(map);
+
+    // Icône personnalisée (livre)
+    const bookIcon = L.icon({
+      iconUrl: "https://cdn-icons-png.flaticon.com/512/29/29302.png",
+      iconSize: [32, 32],
+      iconAnchor: [16, 32],
+      popupAnchor: [0, -32],
+    });
+
+    // Données des marqueurs
+    const markersData = [
+      {
+        coords: [48.8514, 2.3235],
+        title: "Emile Zola - Au bonheur des Dames",
+        message: "Paris devient Capitale du commerce moderne.",
+        url: "#",
+      },
+      {
+        coords: [48.8422, 2.3470],
+        title: "Honoré de Balzac - Le Père Goriot",
+        message: "Le pension Vauquer, microcosme du Paris social et moral",
+        url: "#",
+      },
+      {
+        coords: [48.8833, 2.3333],
+        title: "Patrick Modiano - Dora Bruder",
+        message: "Paris pendant l'occupation",
+        url: "#",
+      },
+      {
+        coords: [48.8544, 2.3470],
+        title: "Georges Simenon - Maigret et le clochard  ",
+        message: "Le Paris nocturne palpable",
+        url: "#",
+      },
+      {
+        coords: [51.5074, -0.1278],
+        title: "Virginia Woolf - Mrs. Dalloway",
+        message: "Une journée à Londres ",
+        url: "#",
+      },
+      {
+        coords: [40.7306, -73.9866],
+        title: "Jay McInerney - Bright Lights, Big City",
+        message: "Vie nocturne et dérive d'un jeune homme dans le Manhattan des années 80",
+        url: "#",
+      },
+      {
+        coords: [48.8566, 2.3522],
+        title: "Lolita Pille - Elena et les joueuses",
+        message: "Roman du désenchantement féminin contemporain. Paris sert de décor concret mais aussi d’allégorie de la dérive intime.",
+        url: "#",
+      },
+    ];
+
+    let openPopup = null;
+
+    // Ajoute les marqueurs avec interactions adaptatives
+    markersData.forEach((data) => {
+      const popupContent = `
+        <strong>${data.title}</strong>
+        ${data.message}<br>
+        <a href="${data.url}" target="_blank">En savoir plus</a>
+      `;
+
+      const marker = L.marker(data.coords, { icon: bookIcon }).addTo(map);
+
+      // Sur appareils tactiles → tap = ouverture du popup
+      if (isTouchDevice) {
+        marker.on("click", () => {
+          if (openPopup) openPopup.closePopup();
+          marker.bindPopup(popupContent).openPopup();
+          openPopup = marker;
+        });
+      } else {
+        // Sur ordinateur → survol = affiche temporairement
+        marker.on("mouseover", () => {
+          if (!marker.isPopupOpen()) {
+            marker.bindPopup(popupContent).openPopup();
+          }
+        });
+        marker.on("mouseout", () => {
+          if (openPopup !== marker) {
+            marker.closePopup();
+          }
+        });
+        // Clic = fige le popup (permet le clic sur lien)
+        marker.on("click", () => {
+          if (openPopup && openPopup !== marker) openPopup.closePopup();
+          marker.bindPopup(popupContent).openPopup();
+          openPopup = marker;
+        });
+      }
+    });
+  </script>
+</body>
+</html>
